@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Puissance4 Ft Minecraft Ft Pi</title>
+    <!-- Compiled and minified CSS -->
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+
+    <!-- Compiled and minified JavaScript -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <link rel="stylesheet" href="css/index.css" />
+  </head>
+  <body>
+    <nav>
+      <div class="nav-wrapper #b71c1c blue darken-4">
+        <a href="#" class="brand-logo" id="title"
+          >Puissance4 : the game | Steve VS PiBoy</a
+        >
+        <ul id="nav-mobile teal lighten-1" class="right teal"></ul>
+      </div>
+    </nav>
+    <div class="myContainer">
+      <div class="row mainRow">
+        <div class="s4 col leftColumn">
+          <div class="row center controlPanel">
+            </hr>
+            <div class="row">
+              <div class="s12 col center">
+                <a class="waves-effect waves-light blue darken-4 btn" onclick=startGame()
+                  ><i class="material-icons right">play_arrow</i>Commencer la
+                  partie</a
+                >
+              </div>
+              <div class="s12 col center">
+                <a class="waves-effect waves-light blue darken-4 btn" onclick=resetGame()
+                  ><i class="material-icons right">stop</i>Reset la partie</a
+                >
+              </div>
+            </div>
+            <div class="chat">
+            </div>
+          </div>
+        </div>
+        <div class="s8 col rightColumn">
+          <div id="game">
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script src="js/gameFront.js">
+  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io("http://localhost:8888");
+    let p4Front;
+
+    //initialisation de la partie
+    socket.on("init_game", (board, displayWaitingMsg = false) => {
+      p4Front = new Puissance4Front("#game", board);
+      if(displayWaitingMsg){
+        msg = "En attente de connexion des joueurs"
+        addToChat(msg);
+      }
+    });
+
+    //reset de la partie 
+    socket.on("init_game_after_reset", (board, name) => {
+      p4Front = new Puissance4Front("#game", board);
+      msg = "Les deux joueurs sont toujours connectés !";
+      addToChat(msg);
+      msg = `C'est à ${name} de jouer !`;
+      addToChat(msg);
+    });
+
+    //connexion d'un joueur
+    socket.on("connect_player", (name) => {
+      msg = `${name} est connecté`;
+      addToChat(msg);
+    });
+
+    //déconnexion d'un joueur 
+    socket.on("disconnected_player", (namePlayerDisconnected, namePlayerConnected) => {
+      alert(`${namePlayerDisconnected} s'est déconnecté, la partie va être reset !`);
+      resetGameAfterDisconnected(namePlayerConnected);
+    });
+
+    //tentative de connexion d'un joueur sans avoir démarrer une partie
+    socket.on("connect_player_without_start", () => {
+      msg = "Un joueur a voulu se connecter mais la partie n'a toujours pas commencé !";
+      addToChat(msg);
+    });
+
+    //afficher le joueur qui doit jouer
+    socket.on("display_turn_player", (name) => {
+      msg = `C'est à ${name} de jouer !`;
+      addToChat(msg);
+    });
+
+    //tentative de connexion d'un client alors qu'il y a déja deux joueurs
+    socket.on("alien_client", (name) => {
+      msg = `${name} a essayé de se connecter mais il y a deja deux joueurs dans la partie !`;
+      addToChat(msg);
+    });
+
+    //si un joueur dont ce n'est pas le tour joue
+    socket.on("bad_player", (name) => {
+      msg = `Ce n'est pas à ${name} de jouer !`;
+      addToChat(msg);
+    });
+    
+    //s'il manque un joueur
+    socket.on("missing_player", () => {
+      msg = "Vous ne pouvez pas encore jouer, il manque un joueur !";
+      addToChat(msg)
+    });
+
+    //si un des joueurs a gagné la partie
+    socket.on("win", (name) => {
+      msg = `${name} a remporté la partie !`
+      alert(`${name} a remporté la partie !`)
+      addToChat(msg)
+    });
+
+    //si personne ne gagne à la fin 
+    socket.on("nobody_win", () => {
+      msg = "Personne n'a remporté la partie !";
+      addToChat(msg)
+    });
+
+    //nouveau coup d'un des joueurs
+    socket.on("new_move", (board, column, name) => {
+      p4Front.setBoard(board);
+      p4Front.render();
+      msg = `${name} a posé un pion dans la colonne ${column}`;
+      addToChat(msg);
+    });
+
+    /** 
+     * Permet d'ajouter un message dans le chat.
+     * @param msg le message a afficher dans le chat
+     */
+    function addToChat(msg){
+      let p = document.createElement("p")
+      p.innerHTML = msg;
+      if(document.querySelector(".chat").childNodes.length > 7) document.querySelector(".chat").removeChild(document.querySelector(".chat").firstChild);
+      document.querySelector(".chat").appendChild(p);
+    }
+
+    /**
+     * Permet de commencer la partie, en envoyant l'événement "start_game" au serveur.
+     */
+    function startGame(){
+      socket.emit("start_game")
+    }
+
+    /**
+     * Permet de reset la partie, en envoyant l'événement "reset_game" au serveur.
+     */
+    function resetGame(){
+      while (document.querySelector(".chat").firstChild) {
+        document.querySelector(".chat").removeChild(document.querySelector(".chat").lastChild);
+      }
+      msg = `La partie a été réinitialisé !`;
+      addToChat(msg);
+      socket.emit("reset_game")
+    }
+
+    /**
+     * Permet de reset la partie après la déconnexion d'un des joueurs en partie, en envoyant l'événement "reset_game_after_disconnected" au serveur.
+     * @param namePlayerConnected le nom du joueur qui est resté connecté
+     */
+    function resetGameAfterDisconnected(namePlayerConnected){
+      while (document.querySelector(".chat").firstChild) {
+        document.querySelector(".chat").removeChild(document.querySelector(".chat").lastChild);
+      }
+      msg = `La partie a été réinitialisé ! ${namePlayerConnected} est encore connecté ! En attente d'un deuxième joueur...`;
+      addToChat(msg);
+      socket.emit("reset_game_after_disconnected", namePlayerConnected)
+    }
+  </script>
+</html>

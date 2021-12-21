@@ -1,0 +1,66 @@
+.myContainer {
+  background-color: #e0e0e0;
+  min-height: 100vh;
+}
+
+.btn {
+  margin: 2vh;
+}
+
+.leftColumn {
+  min-height: 100vh !important;
+  border-right: solid 2px black;
+}
+
+.rightColumn {
+  min-height: 100vh !important;
+  background-color: white;
+}
+
+html {
+  height: 100%;
+}
+body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.mainRow {
+  min-height: 100vh;
+}
+
+.chat {
+  height: 62vh;
+  margin: 5%;
+  background-color: #ffee58;
+  border: 2px solid red;
+  font-size: 20px;
+}
+
+#game {
+  padding: 10vh;
+  height: 100vh;
+  width: 50vw;
+}
+
+#game table {
+  border: 3px blue outset;
+  background-color: blue;
+}
+#game td {
+  width: 5vh;
+  height: 12vh;
+  margin: 0px;
+  padding: 0px;
+  border: 2px blue inset;
+  border-radius: 5vh;
+  background-color: white;
+  cursor: pointer;
+}
+#game td.player1 {
+  background-color: red;
+}
+#game td.player2 {
+  background-color: yellow;
+}
