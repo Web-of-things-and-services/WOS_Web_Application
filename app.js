@@ -30,6 +30,9 @@ let gameFinished = false;
 const io = require("socket.io")(server);
 io.on("connection", (socket) => {
   console.log(`Connecté au client ${socket.id}`);
+  socket.onAny((event, ...args) => {
+    console.log(`Server received : ${event} with ${args}`)
+  })
 
   //début du jeu
   socket.on("start_game", () => {
@@ -84,17 +87,17 @@ io.on("connection", (socket) => {
   });
 
   //nouveau coup d'un joueur
-  socket.on("new_move", (column, name) => {
+  socket.on("new_move", (move) => {
     //dans cette fonction je ne vérifie pas que la colonne est comprise ente 0 et 6, ca doit etre verifier chez les players
     //on vérifie que la partie n'est pas terminé
     if (!gameFinished) {
       //on vérifie que les deux joueurs sont bien connectés
       if (player1.name && player2.name) {
         //on vérifie que le joueur qui a fait le coup est bien le prochain joueur à jouer
-        if (name === nextPlayer) {
-          let win = p4.newMove(column, name);
+        if (move.name === nextPlayer) {
+          let win = p4.newMove(move.column, move.name);
           //on envoie l'evenement du nouveau coup avec un plateau actualisé pour tous les clients
-          io.emit("new_move", p4.getBoard(), column, name);
+          io.emit("new_move", {board: p4.getBoard(), column: move.column, name: move.name});
           //dans le cas où toutes les cases sont remplies sans gagnant
           if (win === "nobody") {
             io.emit("nobody_win");
@@ -102,16 +105,16 @@ io.on("connection", (socket) => {
           }
           //dans le cas où on a un gagnant
           if (win === "player1" || win === "player2") {
-            io.emit("win", name);
+            io.emit("win", move.name);
             gameFinished = true;
           } else {
             //changement de joueur actif
-            if (player1.name === name) nextPlayer = player2.name;
+            if (player1.name === move.name) nextPlayer = player2.name;
             else nextPlayer = player1.name;
             io.emit("display_turn_player", nextPlayer);
           }
         } else {
-          io.emit("bad_player", name);
+          io.emit("bad_player", move.name);
         }
       } else {
         io.emit("missing_player");

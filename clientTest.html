@@ -1,33 +1,35 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title></title>
-  </head>
+</head>
 
-  <body>
-    <h1>Client test</h1>
-    <input id="textfield" type="text" />
-    <input type="button" onclick="jouer()">Jouer le coup</input>
-  </body>
-  <script src="http://localhost:8888/socket.io/socket.io.js"></script>
-  <script>
-        console.log("dans le script")
-        const socket = io("http://localhost:8888", { transports : ['websocket'] });
+<body>
+<h1>Client test</h1>
+<input id="textfield" type="text"/>
+<input onclick="jouer()" type="button">Jouer le coup</input>
+</body>
+<script src="http://localhost:8888/socket.io/socket.io.js"></script>
+<script>
+    console.log("dans le script")
+    const socket = io("http://localhost:8888", {transports: ['websocket']});
 
-        let name = "René";
-        socket.emit("connect_player", name);
-        
-        
-        function jouer() {
-          console.log(document.querySelector("#textfield").value)
-          socket.emit(
+    let name = "René";
+    socket.emit("connect_player", name);
+
+
+    function jouer() {
+        console.log(document.querySelector("#textfield").value)
+        socket.emit(
             "new_move",
-            document.querySelector("#textfield").value,
-            name
-          );
-        }
-  </script>
+            {
+                column: document.querySelector("#textfield").value,
+                name: name
+            }
+        );
+    }
+</script>
 </html>

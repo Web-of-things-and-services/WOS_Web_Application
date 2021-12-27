@@ -134,15 +134,15 @@
 
     //si personne ne gagne à la fin 
     socket.on("nobody_win", () => {
-      msg = "Personne n'a remporté la partie !";
+      let msg = "Personne n'a remporté la partie !";
       addToChat(msg)
     });
 
     //nouveau coup d'un des joueurs
-    socket.on("new_move", (board, column, name) => {
-      p4Front.setBoard(board);
+    socket.on("new_move", (move) => {
+      p4Front.setBoard(move.board);
       p4Front.render();
-      msg = `${name} a posé un pion dans la colonne ${column}`;
+      let msg = `${move.name} a posé un pion dans la colonne ${move.column}`;
       addToChat(msg);
     });
 
