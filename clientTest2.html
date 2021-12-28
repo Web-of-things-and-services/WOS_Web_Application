@@ -12,7 +12,7 @@
 <input id="textfield" type="text"/>
 <input onclick="jouer()" type="button">Jouer le coup</input>
 </body>
-<script src="http://localhost:8888/socket.io/socket.io.js"></script>
+<script src="https://cdn.socket.io/4.4.0/socket.io.min.js" integrity="sha384-1fOn6VtTq3PWwfsOrk45LnYcGosJwzMHv+Xh/Jx5303FVOXzEnw0EpLv30mtjmlj" crossorigin="anonymous"></script>
 <script>
     console.log("dans le script")
     const socket = io("http://0.0.0.0:8888", {transports: ['websocket']});

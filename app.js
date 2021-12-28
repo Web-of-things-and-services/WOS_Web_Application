@@ -90,13 +90,6 @@ io.on("connection", (socket) => {
         //On indique aux autres qu'un nouveau joueur vient de se connecter
 
         io.emit("connect_player", name)
-
-        //Si 2 joueurs connectés, on "lance la partie"
-
-        if (players.player1.name && players.player2.name) {
-            //On répond direct à la socket avec le prochain joueur car si la socket c'est elle-même elle doit jouer direct
-            socket.emit("waiting_move", nextPlayer)
-        }
     });
 
     /**
@@ -139,21 +132,36 @@ io.on("connection", (socket) => {
             return
         }
 
-        let winner = p4.newMove(move.column, move.name);
-
-        //A CHANGER PAR SOCKET.BROADCAST.EMIT SI ON VEUT PAS QUE LE MEC RECOIVE SON PROPRE COUP
-        io.emit("new_move", {board: p4.getBoard(), column: move.column, name: move.name});
-
-        if (winner) {
-            //on a un gagnant
-            io.emit("end_game", winner === "nobody" ? winner : players[winner].name)
-            resetEverything()
-        } else {
-            //changement de joueur actif, winner = null
-            nextPlayer = players.player1.name === move.name ? players.player2.name : players.player1.name
-            io.emit("waiting_move", nextPlayer);
-            listMovesPlayed.push(move)
+        //on vérifie que le move est valide
+        if (!Number.isInteger(move.column)) {
+            io.emit("bad_move", {error : "La colonne doit etre un chiffre", faultyPlayer: move.name})
         }
+
+        if (move.column < 0 || move.column > 7) {
+            io.emit("bad_move", {error : "Le numero de colonne doit etre entre 0 et 7 compris", faultyPlayer: move.name})
+            return
+        }
+
+        try {
+            let winner = p4.newMove(move.column, move.name);
+
+            //A CHANGER PAR SOCKET.BROADCAST.EMIT SI ON VEUT PAS QUE LE MEC RECOIVE SON PROPRE COUP
+            io.emit("new_move", {board: p4.getBoard(), column: move.column, name: move.name});
+
+            if (winner) {
+                //on a un gagnant
+                io.emit("end_game", winner === "nobody" ? winner : players[winner].name)
+                resetEverything()
+            } else {
+                //changement de joueur actif, winner = null
+                nextPlayer = players.player1.name === move.name ? players.player2.name : players.player1.name
+                io.emit("waiting_move", nextPlayer);
+                listMovesPlayed.push(move)
+            }
+        } catch(e) {
+            io.emit("bad_move", {error : e.message, faultyPlayer: move.name})
+        }
+
     });
 
     /**

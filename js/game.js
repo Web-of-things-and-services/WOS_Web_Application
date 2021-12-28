@@ -77,7 +77,7 @@ module.exports = class Puissance4 {
       let row = this.play(parseInt(column));
 
       if (row === null) {
-        console.log("row null");
+        throw new Error("Colonne complete")
       } else {
         // Vérifier s'il y a un gagnant, ou si la partie est finie
         if (this.win(row, column, this.turn)) {
