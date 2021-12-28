@@ -57,85 +57,118 @@
     let p4Front
     let playersConnected = []
 
-    //initialisation de la partie
-    socket.on("init_game", (payload) => {
+    /**
+     * Une partie doit démarrer
+     */
+    socket.on("start_game", (payload) => {
         p4Front = new Puissance4Front("#game", payload.board);
-        if (payload.displayWaitingMsg) {
-            addToChat("En attente de connexion des joueurs");
-        }
-    });
-
-    //reset de la partie 
-    socket.on("init_game_after_reset", (payload) => {
-        p4Front = new Puissance4Front("#game", payload.board);
-        addToChat("Les deux joueurs sont toujours connectés !")
+        cleanChat()
+        addToChat("Démarrage de la partie imminent !")
         addToChat(`C'est à ${payload.nextPlayer} de jouer !`)
     });
 
-    //connexion d'un joueur
+    /**
+     * Erreur de création de la partie
+     */
+    socket.on("start_game_error", (playersConnectedPayload) => {
+        if (playersConnectedPayload.length >= 2) {
+            addToChat(`La partie n'a pas pu démarrer pourtant les 2 joueurs sont connectés, ça doit venir du serveur...`)
+        }
+        else if (playersConnectedPayload.length === 1) {
+            addToChat(`La partie n'a pas pu démarrer, il ne reste plus que ${playersConnectedPayload[0]}!`)
+        }
+        else {
+            addToChat(`La partie n'a pas pu démarrer, il ne reste plus personne de connecté !`)
+        }
+        playersConnected = playersConnectedPayload
+        updatePlayersConnectedHtml()
+    })
+
+    /**
+     * Connexion d'un joueur
+     */
     socket.on("connect_player", (name) => {
         addToChat(`${name} est connecté`);
         playersConnected.push(name)
         updatePlayersConnectedHtml()
     });
 
-    //Déconnexion d'un joueur
-
+    /**
+     * Déconnexion d'un joueur
+     */
     socket.on("disconnected_player", (playerDisconnected) => {
-        addToChat(`${playerDisconnected} vient de se déconnecter !`);
+        addToChat(`${playerDisconnected} vient de se déconnecter`);
         playersConnected = playersConnected.filter(player => player !== playerDisconnected)
-        console.log(playersConnected)
         updatePlayersConnectedHtml()
     });
 
-    //tentative de connexion d'un joueur sans avoir démarrer une partie
-    socket.on("connect_player_without_start", (name) => {
-        addToChat(`${name} a voulu se connecter mais la partie n'a toujours pas commencée !`);
+    /**
+     * Afficher le joueur qui doit jouer
+     */
+    socket.on("waiting_move", (name) => {
+        addToChat(`C'est à ${name} de jouer !`);
     });
 
-    //afficher le joueur qui doit jouer
-    socket.on("display_turn_player", (name) => {
-        msg = `C'est à ${name} de jouer !`;
-        addToChat(msg);
-    });
-
-    //tentative de connexion d'un client alors qu'il y a déja deux joueurs
+    /**
+     * Tentative de connexion d'un joueur alors qu'il y en a déjà 2 de connecté
+     */
     socket.on("alien_client", (name) => {
         addToChat(`${name} a essayé de se connecter mais il y a deja deux joueurs dans la partie !`);
     });
 
-    //si un joueur dont ce n'est pas le tour joue
+    /**
+     * Si un joueur dont ce n'est pas le tour tente de jouer
+     */
     socket.on("bad_player", (name) => {
-        msg = `Ce n'est pas à ${name} de jouer !`;
-        addToChat(msg);
+        addToChat(`Ce n'est pas à ${name} de jouer !`);
     });
 
-    //s'il manque un joueur
-    socket.on("missing_player", () => {
-        msg = "Vous ne pouvez pas encore jouer, il manque un joueur !";
-        addToChat(msg)
+    /**
+     * Un des joueurs a gagné la partie
+     */
+    socket.on("end_game", (winnerName) => {
+        cleanChat()
+        if (winnerName === "nobody") {
+            addToChat(`Partie terminée ! Malheureusement elle se termine sur une égalité.`)
+        } else {
+            addToChat(`Partie terminée ! ${winnerName} remporte la victoire !`)
+        }
     });
 
-    //si un des joueurs a gagné la partie
-    socket.on("win", (name) => {
-        msg = `${name} a remporté la partie !`
-        alert(`${name} a remporté la partie !`)
-        addToChat(msg)
-    });
+    /**
+     * Un administrateur a demandé à réinitialiser la partie
+     */
+    socket.on("stop_game", () => {
+        cleanChat()
+        p4 = new Puissance4()
+        p4.render()
+        addToChat("La partie a été réinitialisée par un administrateur !")
+    })
 
-    //si personne ne gagne à la fin 
-    socket.on("nobody_win", () => {
-        let msg = "Personne n'a remporté la partie !";
-        addToChat(msg)
-    });
-
-    //nouveau coup d'un des joueurs
+    /**
+     * Nouveau coup d'un des joueurs
+     */
     socket.on("new_move", (move) => {
         p4Front.setBoard(move.board);
         p4Front.render();
-        let msg = `${move.name} a posé un pion dans la colonne ${move.column}`;
-        addToChat(msg);
+        addToChat(`${move.name} a joué dans la colonne ${move.column}`);
     });
+
+    /**
+     * Obtenir les infos de la partie pour mettre à jour le jeu actuel
+     */
+    socket.on("game_status", (gameStatus) => {
+        if (gameStatus.gameStarted) {
+            addToChat(`Vous rejoignez la partie en cours, c'est à ${gameStatus.nextPlayer} de jouer !`)
+        }
+
+        p4Front = new Puissance4Front("#game", gameStatus.board);
+        p4Front.render()
+        playersConnected = gameStatus.playersConnected
+        updatePlayersConnectedHtml()
+    })
+
+    socket.emit("game_status")
 
     /**
      * Permet d'ajouter un message dans le chat.
@@ -159,12 +192,22 @@
      * Permet de reset la partie, en envoyant l'événement "reset_game" au serveur.
      */
     function resetGame() {
-        let chat = document.getElementById("chat")
-        chat.innerHTML = ''
-        addToChat(`La partie a été réinitialisé !`);
-        socket.emit("reset_game")
+        cleanChat()
+        addToChat(`Vous avez réinitialisé la partie !`);
+        socket.emit("stop_game")
     }
 
+    /**
+     * Nettoyer le chat
+     */
+    function cleanChat() {
+        let chat = document.getElementById("chat")
+        chat.innerHTML = ''
+    }
+
+    /**
+     * Met à jour le html avec la liste des joueurs connectés connus
+     */
     function updatePlayersConnectedHtml() {
         let collection = document.getElementById("PlayersConnected")
         collection.innerHTML = ''
@@ -172,7 +215,6 @@
             let playerElement = document.createElement("li")
             playerElement.classList.add("collection-item")
             playerElement.innerText = player
-
             collection.appendChild(playerElement)
         }
     }
