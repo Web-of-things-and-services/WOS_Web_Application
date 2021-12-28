@@ -1,192 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Puissance4 Ft Minecraft Ft Pi</title>
     <!-- Compiled and minified CSS -->
     <link
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet"
+            href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet"
     />
     <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+            href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+            rel="stylesheet"
     />
 
     <!-- Compiled and minified JavaScript -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <link rel="stylesheet" href="css/index.css" />
-  </head>
-  <body>
-    <nav>
-      <div class="nav-wrapper #b71c1c blue darken-4">
-        <a href="#" class="brand-logo" id="title"
-          >Puissance4 : the game | Steve VS PiBoy</a
-        >
-        <ul id="nav-mobile teal lighten-1" class="right teal"></ul>
-      </div>
-    </nav>
-    <div class="myContainer">
-      <div class="row mainRow">
+    <link href="css/index.css" rel="stylesheet"/>
+</head>
+<body>
+
+<nav class="navbar">
+    <div>Puissance 4 : PiBoy vs Minecraft player</div>
+</nav>
+<div class="myContainer">
+    <div class="row mainRow">
         <div class="s4 col leftColumn">
-          <div class="row center controlPanel">
-            </hr>
-            <div class="row">
-              <div class="s12 col center">
+            <div class="row center controlPanel">
                 <a class="waves-effect waves-light blue darken-4 btn" onclick=startGame()
-                  ><i class="material-icons right">play_arrow</i>Commencer la
-                  partie</a
+                ><i class="material-icons right">play_arrow</i>Commencer la
+                    partie</a
                 >
-              </div>
-              <div class="s12 col center">
                 <a class="waves-effect waves-light blue darken-4 btn" onclick=resetGame()
-                  ><i class="material-icons right">stop</i>Reset la partie</a
+                ><i class="material-icons right">stop</i>Reset la partie</a
                 >
-              </div>
+                <div id="chat"></div>
+                <h6>Joueurs connectés</h6>
+                <ul class="collection" id="PlayersConnected">
+                </ul>
             </div>
-            <div class="chat">
-            </div>
-          </div>
         </div>
         <div class="s8 col rightColumn">
-          <div id="game">
-          </div>
+            <div id="game">
+            </div>
         </div>
-      </div>
     </div>
-  </body>
-  <script src="js/gameFront.js">
-  </script>
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io("http://localhost:8888");
-    let p4Front;
+</div>
+</body>
+<script src="js/gameFront.js">
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io("http://0.0.0.0:8888")
+    let p4Front
+    let playersConnected = []
 
     //initialisation de la partie
-    socket.on("init_game", (board, displayWaitingMsg = false) => {
-      p4Front = new Puissance4Front("#game", board);
-      if(displayWaitingMsg){
-        msg = "En attente de connexion des joueurs"
-        addToChat(msg);
-      }
+    socket.on("init_game", (payload) => {
+        p4Front = new Puissance4Front("#game", payload.board);
+        if (payload.displayWaitingMsg) {
+            addToChat("En attente de connexion des joueurs");
+        }
     });
 
     //reset de la partie 
-    socket.on("init_game_after_reset", (board, name) => {
-      p4Front = new Puissance4Front("#game", board);
-      msg = "Les deux joueurs sont toujours connectés !";
-      addToChat(msg);
-      msg = `C'est à ${name} de jouer !`;
-      addToChat(msg);
+    socket.on("init_game_after_reset", (payload) => {
+        p4Front = new Puissance4Front("#game", payload.board);
+        addToChat("Les deux joueurs sont toujours connectés !")
+        addToChat(`C'est à ${payload.nextPlayer} de jouer !`)
     });
 
     //connexion d'un joueur
     socket.on("connect_player", (name) => {
-      msg = `${name} est connecté`;
-      addToChat(msg);
+        addToChat(`${name} est connecté`);
+        playersConnected.push(name)
+        updatePlayersConnectedHtml()
     });
 
-    //déconnexion d'un joueur 
-    socket.on("disconnected_player", (namePlayerDisconnected, namePlayerConnected) => {
-      alert(`${namePlayerDisconnected} s'est déconnecté, la partie va être reset !`);
-      resetGameAfterDisconnected(namePlayerConnected);
+    //Déconnexion d'un joueur
+
+    socket.on("disconnected_player", (playerDisconnected) => {
+        addToChat(`${playerDisconnected} vient de se déconnecter !`);
+        playersConnected = playersConnected.filter(player => player !== playerDisconnected)
+        console.log(playersConnected)
+        updatePlayersConnectedHtml()
     });
 
     //tentative de connexion d'un joueur sans avoir démarrer une partie
-    socket.on("connect_player_without_start", () => {
-      msg = "Un joueur a voulu se connecter mais la partie n'a toujours pas commencé !";
-      addToChat(msg);
+    socket.on("connect_player_without_start", (name) => {
+        addToChat(`${name} a voulu se connecter mais la partie n'a toujours pas commencée !`);
     });
 
     //afficher le joueur qui doit jouer
     socket.on("display_turn_player", (name) => {
-      msg = `C'est à ${name} de jouer !`;
-      addToChat(msg);
+        msg = `C'est à ${name} de jouer !`;
+        addToChat(msg);
     });
 
     //tentative de connexion d'un client alors qu'il y a déja deux joueurs
     socket.on("alien_client", (name) => {
-      msg = `${name} a essayé de se connecter mais il y a deja deux joueurs dans la partie !`;
-      addToChat(msg);
+        addToChat(`${name} a essayé de se connecter mais il y a deja deux joueurs dans la partie !`);
     });
 
     //si un joueur dont ce n'est pas le tour joue
     socket.on("bad_player", (name) => {
-      msg = `Ce n'est pas à ${name} de jouer !`;
-      addToChat(msg);
+        msg = `Ce n'est pas à ${name} de jouer !`;
+        addToChat(msg);
     });
-    
+
     //s'il manque un joueur
     socket.on("missing_player", () => {
-      msg = "Vous ne pouvez pas encore jouer, il manque un joueur !";
-      addToChat(msg)
+        msg = "Vous ne pouvez pas encore jouer, il manque un joueur !";
+        addToChat(msg)
     });
 
     //si un des joueurs a gagné la partie
     socket.on("win", (name) => {
-      msg = `${name} a remporté la partie !`
-      alert(`${name} a remporté la partie !`)
-      addToChat(msg)
+        msg = `${name} a remporté la partie !`
+        alert(`${name} a remporté la partie !`)
+        addToChat(msg)
     });
 
     //si personne ne gagne à la fin 
     socket.on("nobody_win", () => {
-      let msg = "Personne n'a remporté la partie !";
-      addToChat(msg)
+        let msg = "Personne n'a remporté la partie !";
+        addToChat(msg)
     });
 
     //nouveau coup d'un des joueurs
     socket.on("new_move", (move) => {
-      p4Front.setBoard(move.board);
-      p4Front.render();
-      let msg = `${move.name} a posé un pion dans la colonne ${move.column}`;
-      addToChat(msg);
+        p4Front.setBoard(move.board);
+        p4Front.render();
+        let msg = `${move.name} a posé un pion dans la colonne ${move.column}`;
+        addToChat(msg);
     });
 
-    /** 
+    /**
      * Permet d'ajouter un message dans le chat.
      * @param msg le message a afficher dans le chat
      */
-    function addToChat(msg){
-      let p = document.createElement("p")
-      p.innerHTML = msg;
-      if(document.querySelector(".chat").childNodes.length > 7) document.querySelector(".chat").removeChild(document.querySelector(".chat").firstChild);
-      document.querySelector(".chat").appendChild(p);
+    function addToChat(msg) {
+        let paragraphElement = document.createElement("p")
+        paragraphElement.innerHTML = msg;
+        let chat = document.getElementById("chat")
+        chat.appendChild(paragraphElement)
     }
 
     /**
      * Permet de commencer la partie, en envoyant l'événement "start_game" au serveur.
      */
-    function startGame(){
-      socket.emit("start_game")
+    function startGame() {
+        socket.emit("start_game")
     }
 
     /**
      * Permet de reset la partie, en envoyant l'événement "reset_game" au serveur.
      */
-    function resetGame(){
-      while (document.querySelector(".chat").firstChild) {
-        document.querySelector(".chat").removeChild(document.querySelector(".chat").lastChild);
-      }
-      msg = `La partie a été réinitialisé !`;
-      addToChat(msg);
-      socket.emit("reset_game")
+    function resetGame() {
+        let chat = document.getElementById("chat")
+        chat.innerHTML = ''
+        addToChat(`La partie a été réinitialisé !`);
+        socket.emit("reset_game")
     }
 
-    /**
-     * Permet de reset la partie après la déconnexion d'un des joueurs en partie, en envoyant l'événement "reset_game_after_disconnected" au serveur.
-     * @param namePlayerConnected le nom du joueur qui est resté connecté
-     */
-    function resetGameAfterDisconnected(namePlayerConnected){
-      while (document.querySelector(".chat").firstChild) {
-        document.querySelector(".chat").removeChild(document.querySelector(".chat").lastChild);
-      }
-      msg = `La partie a été réinitialisé ! ${namePlayerConnected} est encore connecté ! En attente d'un deuxième joueur...`;
-      addToChat(msg);
-      socket.emit("reset_game_after_disconnected", namePlayerConnected)
+    function updatePlayersConnectedHtml() {
+        let collection = document.getElementById("PlayersConnected")
+        collection.innerHTML = ''
+        for (const player of playersConnected) {
+            let playerElement = document.createElement("li")
+            playerElement.classList.add("collection-item")
+            playerElement.innerText = player
+
+            collection.appendChild(playerElement)
+        }
     }
-  </script>
+</script>
 </html>

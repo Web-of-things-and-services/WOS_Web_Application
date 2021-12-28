@@ -8,18 +8,20 @@
 </head>
 
 <body>
-<h1>Client test</h1>
+<h1>Client test <span id="name"></span></h1>
 <input id="textfield" type="text"/>
 <input onclick="jouer()" type="button">Jouer le coup</input>
 </body>
 <script src="http://localhost:8888/socket.io/socket.io.js"></script>
 <script>
     console.log("dans le script")
-    const socket = io("http://localhost:8888", {transports: ['websocket']});
+    const socket = io("http://0.0.0.0:8888", {transports: ['websocket']});
 
     let name = "René";
     socket.emit("connect_player", name);
 
+    let nameElement = document.getElementById("name")
+    nameElement.innerText = name
 
     function jouer() {
         console.log(document.querySelector("#textfield").value)
