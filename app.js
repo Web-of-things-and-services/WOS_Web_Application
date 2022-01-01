@@ -139,14 +139,15 @@ io.on("connection", (socket) => {
         }
 
         //on vérifie que le move est valide
-        if (!Number.isInteger(move.column)) {
+        if (isNaN(parseInt(move.column))) {
             console.log(`[Server emit] bad_move : arg =`, {error : "La colonne doit etre un chiffre", faultyPlayer: move.name})
             io.emit("bad_move", {error : "La colonne doit etre un chiffre", faultyPlayer: move.name})
+            return
         }
 
-        if (move.column < 0 || move.column > 7) {
-            console.log(`[Server emit] bad_move : arg =`, {error : "Le numero de colonne doit etre entre 0 et 7 compris", faultyPlayer: move.name})
-            io.emit("bad_move", {error : "Le numero de colonne doit etre entre 0 et 7 compris", faultyPlayer: move.name})
+        if (move.column < 0 || move.column > 6) {
+            console.log(`[Server emit] bad_move : arg =`, {error : "Le numero de colonne doit etre entre 0 et 6 compris", faultyPlayer: move.name})
+            io.emit("bad_move", {error : "Le numero de colonne doit etre entre 0 et 6 compris", faultyPlayer: move.name})
             return
         }
 
