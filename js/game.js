@@ -82,7 +82,7 @@ module.exports = class Puissance4 {
         // Vérifier s'il y a un gagnant, ou si la partie est finie
         if (this.win(row, column, this.turn)) {
           return name;
-        } else if (this.moves >= this.rows * this.columns) {
+        } else if (this.moves >= this.rows * this.cols) {
           return "nobody";
         }
         // Passer le tour : 3 - 2 = 1, 3 - 1 = 2
