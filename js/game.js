@@ -81,28 +81,13 @@ module.exports = class Puissance4 {
       } else {
         // Vérifier s'il y a un gagnant, ou si la partie est finie
         if (this.win(row, column, this.turn)) {
-          this.winner = this.turn;
+          return name;
         } else if (this.moves >= this.rows * this.columns) {
-          this.winner = 0;
+          return "nobody";
         }
         // Passer le tour : 3 - 2 = 1, 3 - 1 = 2
         this.turn = 3 - this.turn;
-        switch (this.winner) {
-          case 0:
-            console.log("Null game!!");
-            return "nobody";
-            break;
-          case 1:
-            console.log("Player 1 wins");
-            return "player1";
-            break;
-          case 2:
-            console.log("Player 2 wins");
-            return "player2";
-            break;
-          default:
-            return null;
-        }
+        return null;
       }
     }
   }

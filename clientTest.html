@@ -16,13 +16,14 @@
 <script>
     console.log("dans le script")
 
-    let socket = io("http://localhost:8888", {
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 10000,
-        autoConnect: true,
-        forceNew: true,
-    })
+    const socket = io("http://localhost:8888", {transports: ['websocket']});
+    // let socket = io("http://localhost:8888", {
+    //     reconnection: true,
+    //     reconnectionDelay: 1000,
+    //     reconnectionDelayMax: 10000,
+    //     autoConnect: true,
+    //     forceNew: true,
+    // })
 
     let name = "René";
     socket.emit("connect_player", name);

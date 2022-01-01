@@ -89,6 +89,8 @@ io.on("connection", (socket) => {
 
         //On indique aux autres qu'un nouveau joueur vient de se connecter
 
+        
+        console.log(`[Server emit] connect_player : name =` ,name)
         io.emit("connect_player", name)
     });
 
@@ -102,9 +104,11 @@ io.on("connection", (socket) => {
             resetEverything()
             gameStarted = true
             nextPlayer = getRandomFirstPlayer()
+            console.log(`[Server emit] start_game : arg =` ,{board: p4.getBoard(), nextPlayer: nextPlayer})
             io.emit("start_game", {board: p4.getBoard(), nextPlayer: nextPlayer})
         } else {
             let playersConnected = getPlayersConnected()
+            console.log(`[Server emit] start_game_error : arg =`, playersConnected)
             socket.emit("start_game_error", playersConnected)
         }
     });
@@ -114,6 +118,7 @@ io.on("connection", (socket) => {
      */
     socket.on("stop_game", () => {
         resetEverything()
+        console.log(`[Server emit] stop_game : arg =`)
         socket.broadcast.emit("stop_game");
     });
 
@@ -128,16 +133,19 @@ io.on("connection", (socket) => {
 
         //on vérifie que le joueur qui a fait le coup est bien le prochain joueur à jouer
         if (move.name !== nextPlayer) {
+            console.log(`[Server emit] bad_player : arg =`, move.name)
             io.emit("bad_player", move.name);
             return
         }
 
         //on vérifie que le move est valide
         if (!Number.isInteger(move.column)) {
+            console.log(`[Server emit] bad_move : arg =`, {error : "La colonne doit etre un chiffre", faultyPlayer: move.name})
             io.emit("bad_move", {error : "La colonne doit etre un chiffre", faultyPlayer: move.name})
         }
 
         if (move.column < 0 || move.column > 7) {
+            console.log(`[Server emit] bad_move : arg =`, {error : "Le numero de colonne doit etre entre 0 et 7 compris", faultyPlayer: move.name})
             io.emit("bad_move", {error : "Le numero de colonne doit etre entre 0 et 7 compris", faultyPlayer: move.name})
             return
         }
@@ -146,19 +154,23 @@ io.on("connection", (socket) => {
             let winner = p4.newMove(move.column, move.name);
 
             //A CHANGER PAR SOCKET.BROADCAST.EMIT SI ON VEUT PAS QUE LE MEC RECOIVE SON PROPRE COUP
+            console.log(`[Server emit] new_move : arg =`, {board: p4.getBoard(), column: move.column, name: move.name})
             io.emit("new_move", {board: p4.getBoard(), column: move.column, name: move.name});
 
             if (winner) {
                 //on a un gagnant
-                io.emit("end_game", winner === "nobody" ? winner : players[winner].name)
+                console.log(`[Server emit] end_game : arg =`, winner)
+                io.emit("end_game", winner)
                 resetEverything()
             } else {
                 //changement de joueur actif, winner = null
                 nextPlayer = players.player1.name === move.name ? players.player2.name : players.player1.name
+                console.log(`[Server emit] waiting_move : arg =`, nextPlayer)
                 io.emit("waiting_move", nextPlayer);
                 listMovesPlayed.push(move)
             }
         } catch(e) {
+            console.log(`[Server emit] bad_move : arg =`, {error : e.message, faultyPlayer: move.name})
             io.emit("bad_move", {error : e.message, faultyPlayer: move.name})
         }
 
@@ -168,6 +180,13 @@ io.on("connection", (socket) => {
      * Une socket demande l'état actuel de la partie
      */
     socket.on("game_status", () => {
+        console.log(`[Server emit] game_status : arg =`, {
+            gameStarted: gameStarted,
+            board: p4.getBoard(),
+            listMovesPlayed: listMovesPlayed,
+            nextPlayer: nextPlayer,
+            playersConnected: getPlayersConnected()
+        })
         socket.emit("game_status", {
             gameStarted: gameStarted,
             board: p4.getBoard(),
@@ -184,6 +203,7 @@ io.on("connection", (socket) => {
     socket.on("disconnecting", () => {
         for (const [_, playerObject] of Object.entries(players)) {
             if (playerObject.socket && playerObject.socket.id === socket.id) {
+                console.log(`[Server emit] disconnected_player : arg =`, playerObject.name)
                 socket.broadcast.emit("disconnected_player", playerObject.name)
                 return
             }
