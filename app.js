@@ -136,7 +136,7 @@ io.on("connection", (socket) => {
                 }
             }
         }
-        socket.broadcast.emit("disconnected_player", name)
+        io.emit("stop_game");
     });
 
     /**
