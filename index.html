@@ -140,9 +140,9 @@
      */
     socket.on("stop_game", () => {
         cleanChat()
+        addToChat("La partie a été réinitialisée par un administrateur !")
         p4 = new Puissance4()
         p4.render()
-        addToChat("La partie a été réinitialisée par un administrateur !")
     })
 
     socket.on("bad_move", (payload) => {
@@ -164,6 +164,8 @@
     socket.on("game_status", (gameStatus) => {
         if (gameStatus.gameStarted) {
             addToChat(`Vous rejoignez la partie en cours, c'est à ${gameStatus.nextPlayer} de jouer !`)
+        } else {
+            addToChat(`Aucune partie n'est actuellement en cours, libre à vous d'en commencer une :)`)
         }
 
         p4Front = new Puissance4Front("#game", gameStatus.board);
@@ -182,7 +184,7 @@
         let paragraphElement = document.createElement("p")
         paragraphElement.innerHTML = msg;
         let chat = document.getElementById("chat")
-        chat.appendChild(paragraphElement)
+        chat.prepend(paragraphElement)
     }
 
     /**
