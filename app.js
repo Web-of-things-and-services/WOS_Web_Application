@@ -127,6 +127,15 @@ io.on("connection", (socket) => {
      */
     socket.on("kick_player", (name) => {
         resetEverything()
+        for (const [playerNumber, playerObject] of Object.entries(players)) {
+            if (playerObject.name === name) {
+                players[playerNumber].socket.disconnect()
+                players[playerNumber] = {
+                    name: "",
+                    socket: null
+                }
+            }
+        }
         socket.broadcast.emit("disconnected_player", name)
     });
 
