@@ -84,3 +84,9 @@ html, body {
 .collection {
     margin: 0;
 }
+
+.clickable:hover {
+    background-color: indianred;
+    transition: background-color 0.7s ease;
+    cursor: pointer;
+}

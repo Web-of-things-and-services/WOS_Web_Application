@@ -218,7 +218,12 @@
         for (const player of playersConnected) {
             let playerElement = document.createElement("li")
             playerElement.classList.add("collection-item")
+            playerElement.classList.add("clickable")
             playerElement.innerText = player
+            playerElement.title = "Click to kick player from the game"
+            playerElement.onclick = () => {
+                socket.emit("kick_player", player)
+            }
             collection.appendChild(playerElement)
         }
     }
