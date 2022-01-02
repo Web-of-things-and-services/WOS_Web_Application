@@ -89,7 +89,9 @@
      */
     socket.on("connect_player", (name) => {
         addToChat(`${name} est connecté`);
-        playersConnected.push(name)
+        if (!playersConnected.includes(name)) {
+            playersConnected.push(name)
+        }
         updatePlayersConnectedHtml()
     });
 
