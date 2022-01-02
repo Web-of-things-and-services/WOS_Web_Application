@@ -123,6 +123,14 @@ io.on("connection", (socket) => {
     });
 
     /**
+     * Reset de la partie par un administrateur
+     */
+    socket.on("kick_player", (name) => {
+        resetEverything()
+        socket.broadcast.emit("disconnected_player", name)
+    });
+
+    /**
      * Nouveau coup d'un joueur
      */
     socket.on("new_move", (move) => {
